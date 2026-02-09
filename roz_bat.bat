@@ -34,24 +34,24 @@ echo [2/2] Linking: %DLL_OUT%...
     /OUT:"%DLL_OUT%" ^
     "%OBJ_FILE%" ^
     /LIBPATH:"%WIN_KITS%" ^
-    /EXPORT:Luna_WinMemset ^
-    /EXPORT:Luna_WinMemcpy ^
-    /EXPORT:Luna_MemMove ^
-    /EXPORT:Luna_MemSwap64 ^
-    /EXPORT:Luna_ZeroFill ^
-    /EXPORT:Luna_GetTicks ^
-    /EXPORT:Luna_AtomicAdd64 ^
-    /EXPORT:Luna_AtomicXchg64 ^
-    /EXPORT:Luna_Prefetch ^
-    /EXPORT:Luna_CacheFlush ^
-    /EXPORT:Luna_MemIsZero ^
-    /EXPORT:Luna_BitScanForward ^
-    /EXPORT:Luna_StrLen ^
-    /EXPORT:Luna_StrChr ^
-    /EXPORT:Luna_Alloc ^
-    /EXPORT:Luna_Calloc ^
-    /EXPORT:Luna_Free ^
-    /EXPORT:Luna_Realloc ^
+    /EXPORT:roz_WinMemset ^
+    /EXPORT:roz_WinMemcpy ^
+    /EXPORT:roz_MemMove ^
+    /EXPORT:roz_MemSwap64 ^
+    /EXPORT:roz_ZeroFill ^
+    /EXPORT:roz_GetTicks ^
+    /EXPORT:roz_AtomicAdd64 ^
+    /EXPORT:roz_AtomicXchg64 ^
+    /EXPORT:roz_Prefetch ^
+    /EXPORT:roz_CacheFlush ^
+    /EXPORT:roz_MemIsZero ^
+    /EXPORT:roz_BitScanForward ^
+    /EXPORT:roz_StrLen ^
+    /EXPORT:roz_StrChr ^
+    /EXPORT:roz_Alloc ^
+    /EXPORT:roz_Calloc ^
+    /EXPORT:roz_Free ^
+    /EXPORT:roz_Realloc ^
     kernel32.lib
 
 if %errorlevel% neq 0 (

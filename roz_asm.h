@@ -5,26 +5,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// --- Luna_SysMem.asm ---
-extern void  Luna_WinMemset(void* dest, uint64_t val, uint64_t count_bytes);
-extern void  Luna_WinMemcpy(void* dest, const void* src, uint64_t count_bytes);
-extern void  Luna_MemMove(void* dest, const void* src, uint64_t count_bytes);
-extern void  Luna_MemSwap64(void* a, void* b, uint64_t count_qwords);
-extern void  Luna_ZeroFill(void* dest, uint64_t count_bytes);
-extern uint64_t   Luna_GetTicks(void);
-extern uint64_t   Luna_AtomicXchg64(volatile uint64_t* target, uint64_t value);
-extern void  Luna_AtomicAdd64(volatile uint64_t* target, uint64_t value);
-extern void  Luna_Prefetch(const void* addr);
-extern void  Luna_CacheFlush(const void* addr);
-extern uint64_t   Luna_MemIsZero(const void* buf, uint64_t count_qwords);
-extern int64_t   Luna_BitScanForward(uint64_t value);
-extern uint64_t   Luna_StrLen(const char* str);
-extern char* Luna_StrChr(const char* str, char c);
-extern void* Luna_Alloc(size_t size);
-extern void* Luna_Calloc(size_t size);
-extern void  Luna_Free(void* ptr);
-extern void* Luna_Realloc(void* ptr, size_t new_size);
+// --- roz_SysMem.asm ---
+extern void  roz_WinMemset(void* dest, uint64_t val, uint64_t count_bytes);
+extern void  roz_WinMemcpy(void* dest, const void* src, uint64_t count_bytes);
+extern void  roz_MemMove(void* dest, const void* src, uint64_t count_bytes);
+extern void  roz_MemSwap64(void* a, void* b, uint64_t count_qwords);
+extern void  roz_ZeroFill(void* dest, uint64_t count_bytes);
+extern uint64_t   roz_GetTicks(void);
+extern uint64_t   roz_AtomicXchg64(volatile uint64_t* target, uint64_t value);
+extern void  roz_AtomicAdd64(volatile uint64_t* target, uint64_t value);
+extern void  roz_Prefetch(const void* addr);
+extern void  roz_CacheFlush(const void* addr);
+extern uint64_t   roz_MemIsZero(const void* buf, uint64_t count_qwords);
+extern int64_t   roz_BitScanForward(uint64_t value);
+extern uint64_t   roz_StrLen(const char* str);
+extern char* roz_StrChr(const char* str, char c);
+extern void* roz_Alloc(size_t size);
+extern void* roz_Calloc(size_t size);
+extern void  roz_Free(void* ptr);
+extern void* roz_Realloc(void* ptr, size_t new_size);
 #ifdef __cplusplus
 }
 #endif
-#endif // LUNA_ASM_H
+#endif // ROZ_ASM_H

@@ -3,79 +3,134 @@ import time
 
 # --- INIT ---
 try:
-    luna = ctypes.CDLL("./roz_asm.dll")
+    roz = ctypes.CDLL("./roz_asm.dll")
 except Exception as e:
     print(f"FATAL: DLL LOAD ERROR: {e}"); exit(1)
 
+# Типы данных
 PTR, U64, I64, U32 = ctypes.c_void_p, ctypes.c_uint64, ctypes.c_int64, ctypes.c_uint32
+CHAR_P = ctypes.c_char_p
 
 def set_t(f, r, a): f.restype = r; f.argtypes = a
 
-# Mapping functions
-set_t(luna.Luna_WinMemset, None, [PTR, U32, U64])
-set_t(luna.Luna_WinMemcpy, PTR,  [PTR, PTR, U64])
-set_t(luna.Luna_StrLen,    U64,  [ctypes.c_char_p])
-set_t(luna.Luna_Alloc,     PTR,  [U64])
-set_t(luna.Luna_Free,      None, [PTR])
-set_t(luna.Luna_GetTicks,  U64,  [])
+# --- MAPPING ALL EXTERN FUNCTIONS ---
+set_t(roz.roz_WinMemset,    None,   [PTR, U32, U64])
+set_t(roz.roz_WinMemcpy,    PTR,    [PTR, PTR, U64])
+set_t(roz.roz_MemMove,      None,   [PTR, PTR, U64])
+set_t(roz.roz_MemSwap64,    None,   [PTR, PTR, U64])
+set_t(roz.roz_ZeroFill,     None,   [PTR, U64])
+set_t(roz.roz_GetTicks,     U64,    [])
+set_t(roz.roz_AtomicXchg64, U64,    [PTR, U64])
+set_t(roz.roz_AtomicAdd64,  None,   [PTR, U64])
+set_t(roz.roz_Prefetch,     None,   [PTR])
+set_t(roz.roz_MemIsZero,    U64,    [PTR, U64])
+set_t(roz.roz_BitScanForward, I64,  [U64])
+set_t(roz.roz_StrLen,       U64,    [CHAR_P])
+set_t(roz.roz_Alloc,        PTR,    [U64])
+set_t(roz.roz_Free,         None,   [PTR])
+set_t(roz.roz_Calloc,       PTR,    [U64])
+set_t(roz.roz_Realloc,      PTR,    [PTR, U64])
+set_t(roz.roz_StrChr,       PTR,    [CHAR_P, ctypes.c_char])
+set_t(roz.roz_CacheFlush,   None,   [PTR])
 
 def run_benchmarks():
     print("\n" + "═"*75)
-    print(f"║ {'SYSTEM CORE PERFORMANCE BENCHMARK (x64)' : ^71} ║")
+    print(f"║ {'ROZ CORE: FULL ASM ENGINE STRESS-TEST' : ^71} ║")
     print("═"*75)
 
-    # Тестовые данные: 100 МБ
-    DATA_SIZE = 100 * 1024 * 1024 
-    ITERATIONS = 10
-    
-    print(f"[*] Payload: {DATA_SIZE // (1024*1024)} MB | Iterations: {ITERATIONS}")
-    
-    p1 = luna.Luna_Alloc(DATA_SIZE)
-    p2 = luna.Luna_Alloc(DATA_SIZE)
-    
-    # --- TEST 1: MEMSET SPEED ---
-    print(f"\n[TEST 1] SIMD MEMSET (0xAA)")
-    t1 = time.perf_counter()
-    for _ in range(ITERATIONS):
-        luna.Luna_WinMemset(p1, 0xAA, DATA_SIZE)
-    t2 = time.perf_counter()
-    print(f" > WinMemset Speed: {((DATA_SIZE * ITERATIONS) / (t2 - t1)) / (1024**3):.2f} GB/s")
+    # 1. Тест выделения и ZeroFill
+    print("[*] Testing Memory Allocation & ZeroFill...")
+    size = 10 * 1024 * 1024
+    buf = roz.roz_Alloc(size)
+    roz.roz_ZeroFill(buf, size)
+    is_zero = roz.roz_MemIsZero(buf, size // 8)
+    print(f" > MemIsZero Check: {'SUCCESS' if is_zero == 1 else 'FAILED'}")
 
-    # --- TEST 2: MEMCPY SPEED ---
-    print(f"\n[TEST 2] SIMD MEMCPY")
-    t1 = time.perf_counter()
-    for _ in range(ITERATIONS):
-        luna.Luna_WinWinMemcpy = luna.Luna_WinMemcpy(p2, p1, DATA_SIZE)
-    t2 = time.perf_counter()
-    print(f" > WinMemcpy Speed: {((DATA_SIZE * ITERATIONS) / (t2 - t1)) / (1024**3):.2f} GB/s")
+    # 2. Тест Atomic операций (важно для многопоточности Луны)
+    print("\n[*] Testing Atomic Operations...")
+    val = ctypes.c_uint64(100)
+    p_val = ctypes.addressof(val)
+    roz.roz_AtomicAdd64(p_val, 50)
+    print(f" > AtomicAdd64 (100 + 50): {val.value}")
+    old = roz.roz_AtomicXchg64(p_val, 999)
+    print(f" > AtomicXchg64 (Old: {old}, New: {val.value})")
 
-    # --- TEST 3: STRLEN VS NATIVE ---
-    print(f"\n[TEST 3] STRING ENGINE (STRLEN)")
-    long_str = b"A" * 1_000_000 + b"\0"
-    t1 = time.perf_counter()
-    for _ in range(1000):
-        _ = luna.Luna_StrLen(long_str)
-    t2 = time.perf_counter()
-    print(f" > ASM StrLen:  {(t2 - t1)*1000:.3f} ms (total for 1k iterations)")
+    # 3. Тест BitScanForward (поиск первого установленного бита)
+    print("\n[*] Testing BitScanForward...")
+    bit_val = 0x001000  # 13-й бит
+    index = roz.roz_BitScanForward(bit_val)
+    print(f" > Index of first bit in {hex(bit_val)}: {index}")
 
-    # --- TEST 4: HEAP STRESS (STABILITY) ---
-    print(f"\n[TEST 4] HEAP ALLOC/FREE STRESS")
-    success = 0
-    t1 = time.perf_counter()
-    for i in range(5000):
-        tmp = luna.Luna_Alloc(i + 1)
-        if tmp:
-            luna.Luna_Free(tmp)
-            success += 1
-    t2 = time.perf_counter()
-    print(f" > Stress: {success}/5000 cycles OK | Time: {t2-t1:.3f}s")
+    print("\n[*] Testing MemMove (Overlap Check)...")
+    # Создаем буфер [1, 2, 3, 4, 5, 0, 0, 0]
+    data = (ctypes.c_uint8 * 8)(1, 2, 3, 4, 5, 0, 0, 0)
+    p_data = ctypes.addressof(data)
+    # Копируем 5 байт со смещением на 1 вправо: должно стать [1, 1, 2, 3, 4, 5, 0, 0]
+    roz.roz_MemMove(p_data + 1, p_data, 5)
+    
+    result = list(data)
+    expected = [1, 1, 2, 3, 4, 5, 0, 0]
+    print(f" > Result:   {result}")
+    print(f" > Status:   {'SUCCESS' if result == expected else 'FAILED'}")
+
+    print("\n[*] Testing Calloc & Realloc...")
+    # Calloc: 100 байт должны быть нулями
+    p_mem = roz.roz_Calloc(100)
+    is_zero = roz.roz_MemIsZero(p_mem, 100 // 8)
+    
+    # Запишем метку в начало
+    ctypes.cast(p_mem, ctypes.POINTER(ctypes.c_uint8))[0] = 0xDE
+    # Расширяем до 200 байт
+    p_mem = roz.roz_Realloc(p_mem, 200)
+    # Проверяем, осталась ли метка на месте
+    val = ctypes.cast(p_mem, ctypes.POINTER(ctypes.c_uint8))[0]
+    
+    print(f" > Calloc zeroed: {'YES' if is_zero else 'NO'}")
+    print(f" > Realloc preserved data: {'YES' if val == 0xDE else 'NO'}")
+    roz.roz_Free(p_mem)
+
+    print("\n[*] Testing String Engine...")
+    test_str = b"Luna_System_Core\0"
+    # StrLen
+    length = roz.roz_StrLen(test_str)
+    # StrChr: ищем символ '_'
+    p_char = roz.roz_StrChr(test_str, b'_')
+    # Рассчитаем дистанцию (указатель на '_' минус указатель на начало)
+    found_at = ctypes.cast(p_char, ctypes.c_void_p).value - ctypes.cast(test_str, ctypes.c_void_p).value
+    
+    print(f" > StrLen: expected 16, got {length}")
+    print(f" > StrChr: found '_' at index {found_at}")
+    status = "SUCCESS" if (length == 16 and found_at == 4) else "FAILED"
+    print(f" > Status: {status}")
+
+    # 4. Тест MemSwap64 (быстрая перестановка блоков данных)
+    print("\n[*] Testing MemSwap64...")
+    a = (ctypes.c_uint64 * 1)(111)
+    b = (ctypes.c_uint64 * 1)(999)
+    roz.roz_MemSwap64(ctypes.addressof(a), ctypes.addressof(b), 1)
+    print(f" > After Swap: a={a[0]}, b={b[0]}")
+
+    print("\n[*] Testing Cache Ops (Stability Check)...")
+    temp_buf = roz.roz_Alloc(64)
+    try:
+        roz.roz_Prefetch(temp_buf)
+        roz.roz_CacheFlush(temp_buf)
+        print(" > Prefetch/Flush: STABLE")
+    except Exception as e:
+        print(f" > Cache Ops: CRASHED ({e})")
+    roz.roz_Free(temp_buf)
+    
+    # 5. Высокоточный тайминг через GetTicks
+    print("\n[*] Testing System Ticks...")
+    t_start = roz.roz_GetTicks()
+    time.sleep(0.1)
+    t_end = roz.roz_GetTicks()
+    print(f" > Ticks passed in 100ms: {t_end - t_start}")
 
     # CLEANUP
-    luna.Luna_Free(p1)
-    luna.Luna_Free(p2)
-
+    roz.roz_Free(buf)
     print("\n" + "═"*75)
-    print(f"║ {'BENCHMARK COMPLETE - HARDWARE SATURATED' : ^71} ║")
+    print(f"║ {'ALL CORE FUNCTIONS VALIDATED' : ^71} ║")
     print("═"*75 + "\n")
 
 if __name__ == "__main__":

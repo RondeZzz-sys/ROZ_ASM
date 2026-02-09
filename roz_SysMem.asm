@@ -6,26 +6,26 @@ extern HeapAlloc
 extern HeapFree
 extern HeapReAlloc
 
-global Luna_WinMemset
-global Luna_WinMemcpy
-global Luna_MemMove
-global Luna_MemSwap64
-global Luna_ZeroFill
-global Luna_GetTicks
-global Luna_AtomicAdd64
-global Luna_AtomicXchg64
-global Luna_Prefetch
-global Luna_CacheFlush
-global Luna_MemIsZero
-global Luna_BitScanForward
-global Luna_StrLen
-global Luna_StrChr
-global Luna_Alloc
-global Luna_Calloc
-global Luna_Free
-global Luna_Realloc
+global roz_WinMemset
+global roz_WinMemcpy
+global roz_MemMove
+global roz_MemSwap64
+global roz_ZeroFill
+global roz_GetTicks
+global roz_AtomicAdd64
+global roz_AtomicXchg64
+global roz_Prefetch
+global roz_CacheFlush
+global roz_MemIsZero
+global roz_BitScanForward
+global roz_StrLen
+global roz_StrChr
+global roz_Alloc
+global roz_Calloc
+global roz_Free
+global roz_Realloc
 
-Luna_WinMemset:
+roz_WinMemset:
     movzx edx, dl          ; расширяем байт до 64 бит
     mov rax, 0x0101010101010101
     imul rax, rdx          ; заполняем 8 байт одинаковым значением
@@ -81,7 +81,7 @@ Luna_WinMemset:
 .done:
     ret
 
-Luna_WinMemcpy:
+roz_WinMemcpy:
     push rdi
     push rsi
     mov rdi, rcx            ; Куда (Destination)
@@ -96,25 +96,25 @@ Luna_WinMemcpy:
 .use_memmove:
     pop rsi                 ; Восстанавливаем для вызова MemMove
     pop rdi
-    jmp Luna_MemMove
+    jmp roz_MemMove
 .exit:
     mov rax, rdi            ; Возвращаем указатель
     pop rsi
     pop rdi
     ret
 
-Luna_ZeroFill:
+roz_ZeroFill:
     test rdx, rdx
     jz .done
     push r8                ; Сохраняем R8
     mov r8, rdx            ; count для WinMemset (из RDX в R8)
     xor rdx, rdx           ; value = 0
-    call Luna_WinMemset
+    call roz_WinMemset
     pop r8
 .done:
     ret
 
-Luna_MemMove:
+roz_MemMove:
     mov rax, rcx 
     cmp rcx, rdx
     jbe .forward
@@ -177,7 +177,7 @@ Luna_MemMove:
 .done:
     ret
 
-Luna_MemSwap64:
+roz_MemSwap64:
 .sw:
     mov rax, [rcx]
     mov r9, [rdx]
@@ -189,31 +189,31 @@ Luna_MemSwap64:
     jnz .sw
     ret
 
-Luna_GetTicks:
+roz_GetTicks:
     rdtsc           ; Читает такты в EDX:EAX
     shl rdx, 32     ; Сдвигаем EDX (старшие 32 бита) в верхнюю часть RDX
     or rax, rdx     ; Склеиваем с EAX в 64-битный RAX
     shr rax, 16     ; ВОТ ОНА, МАГИЯ: Сдвигаем весь результат на 16 бит вправо
     ret
     
-Luna_AtomicXchg64:
+roz_AtomicXchg64:
     mov rax, rdx
     xchg [rcx], rax        ; XCHG атомарен сам по себе
     ret
 
-Luna_AtomicAdd64:
+roz_AtomicAdd64:
     lock add [rcx], rdx    ; Префикс LOCK делает операцию неделимой
     ret
 
-Luna_Prefetch:
+roz_Prefetch:
     prefetcht0 [rcx]       ; Загрузить данные в L1 кэш заранее
     ret
 
-Luna_CacheFlush:
+roz_CacheFlush:
     clflush [rcx]          ; Сбросить линию кэша (принудительное чтение из RAM)
     ret
 
-Luna_MemIsZero:
+roz_MemIsZero:
     test rdx, rdx
     jz .is_zero
     mov r8, rdx
@@ -250,7 +250,7 @@ Luna_MemIsZero:
     xor eax, eax
     ret
 
-Luna_BitScanForward:
+roz_BitScanForward:
     bsf rax, rcx
     jz .empty
     ret
@@ -258,7 +258,7 @@ Luna_BitScanForward:
     mov rax, -1
     ret
 
-Luna_StrLen:
+roz_StrLen:
     xor rax, rax
 .loop:
     cmp byte [rcx + rax], 0
@@ -270,7 +270,7 @@ Luna_StrLen:
 .done:
     ret
 
-Luna_StrChr:
+roz_StrChr:
     mov rax, rcx        ; rax = указатель на строку (первый аргумент)
     movzx edx, dl       ; edx = символ для поиска (второй аргумент в dl)
 .search:
@@ -287,7 +287,7 @@ Luna_StrChr:
     xor rax, rax
     ret
 
-Luna_Alloc:
+roz_Alloc:
     sub rsp, 48             ; 32 (Shadow) + 16 (Alignment)
     mov r8, rcx             ; Размер
     call GetProcessHeap
@@ -297,7 +297,7 @@ Luna_Alloc:
     add rsp, 48
     ret
 
-Luna_Calloc:
+roz_Calloc:
     sub rsp, 48             ; Было 40 — ЭТО ПРИЧИНА КРАША
     mov r8, rcx             ; Размер
     call GetProcessHeap
@@ -307,7 +307,7 @@ Luna_Calloc:
     add rsp, 48
     ret
 
-Luna_Free:
+roz_Free:
     test rcx, rcx
     jz .done
     sub rsp, 48
@@ -320,7 +320,7 @@ Luna_Free:
 .done:
     ret
 
-Luna_Realloc:
+roz_Realloc:
     sub rsp, 48             ; Исправлено с 40 на 48
     mov r9, rdx             ; Новый размер
     mov r8, rcx             ; Старый указатель
