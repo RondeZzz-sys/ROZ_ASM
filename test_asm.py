@@ -46,7 +46,7 @@ def run_benchmarks():
     is_zero = roz.roz_MemIsZero(buf, size // 8)
     print(f" > MemIsZero Check: {'SUCCESS' if is_zero == 1 else 'FAILED'}")
 
-    # 2. Тест Atomic операций (важно для многопоточности Луны)
+    # 2. Тест Atomic операций
     print("\n[*] Testing Atomic Operations...")
     val = ctypes.c_uint64(100)
     p_val = ctypes.addressof(val)
@@ -90,19 +90,19 @@ def run_benchmarks():
     roz.roz_Free(p_mem)
 
     print("\n[*] Testing String Engine...")
-    test_str = b"Luna_System_Core\0"
+    test_str = b"roz_System_Core\0"
+    
     # StrLen
     length = roz.roz_StrLen(test_str)
+    
     # StrChr: ищем символ '_'
     p_char = roz.roz_StrChr(test_str, b'_')
-    # Рассчитаем дистанцию (указатель на '_' минус указатель на начало)
     found_at = ctypes.cast(p_char, ctypes.c_void_p).value - ctypes.cast(test_str, ctypes.c_void_p).value
-    
-    print(f" > StrLen: expected 16, got {length}")
+    print(f" > StrLen: expected 15, got {length}")
     print(f" > StrChr: found '_' at index {found_at}")
-    status = "SUCCESS" if (length == 16 and found_at == 4) else "FAILED"
+    status = "SUCCESS" if (length == 15 and found_at == 3) else "FAILED"
     print(f" > Status: {status}")
-
+    
     # 4. Тест MemSwap64 (быстрая перестановка блоков данных)
     print("\n[*] Testing MemSwap64...")
     a = (ctypes.c_uint64 * 1)(111)
@@ -119,7 +119,7 @@ def run_benchmarks():
     except Exception as e:
         print(f" > Cache Ops: CRASHED ({e})")
     roz.roz_Free(temp_buf)
-    
+
     # 5. Высокоточный тайминг через GetTicks
     print("\n[*] Testing System Ticks...")
     t_start = roz.roz_GetTicks()
