@@ -26,9 +26,9 @@ global roz_Free
 global roz_Realloc
 
 roz_WinMemset:
-    movzx edx, dl          ; расширяем байт до 64 бит
+    movzx edx, dl
     mov rax, 0x0101010101010101
-    imul rax, rdx          ; заполняем 8 байт одинаковым значением
+    imul rax, rdx
     cmp r8, 128
     jb .small
     mov r9, rcx
@@ -47,7 +47,7 @@ roz_WinMemset:
     pshufd xmm0, xmm0, 0
     movlhps xmm0, xmm0
     mov r10, r8
-    shr r10, 7            ; 128 байт за итерацию
+    shr r10, 7
 .big_loop:
     movdqu [rcx], xmm0
     movdqu [rcx+16], xmm0
@@ -84,21 +84,21 @@ roz_WinMemset:
 roz_WinMemcpy:
     push rdi
     push rsi
-    mov rdi, rcx            ; Куда (Destination)
-    mov rsi, rdx            ; Откуда (Source)
-    mov rcx, r8             ; Сколько байт
+    mov rdi, rcx
+    mov rsi, rdx
+    mov rcx, r8
     mov rax, rdi
     sub rax, rsi
     cmp rax, rcx
-    jb .use_memmove         ; Если области перекрываются — идем в MemMove
-    rep movsb               ; Самый надежный и быстрый способ на современных CPU
+    jb .use_memmove
+    rep movsb
     jmp .exit
 .use_memmove:
-    pop rsi                 ; Восстанавливаем для вызова MemMove
+    pop rsi
     pop rdi
     jmp roz_MemMove
 .exit:
-    mov rax, rdi            ; Возвращаем указатель
+    mov rax, rdi
     pop rsi
     pop rdi
     ret
@@ -106,9 +106,9 @@ roz_WinMemcpy:
 roz_ZeroFill:
     test rdx, rdx
     jz .done
-    push r8                ; Сохраняем R8
-    mov r8, rdx            ; count для WinMemset (из RDX в R8)
-    xor rdx, rdx           ; value = 0
+    push r8
+    mov r8, rdx
+    xor rdx, rdx
     call roz_WinMemset
     pop r8
 .done:
@@ -190,35 +190,35 @@ roz_MemSwap64:
     ret
 
 roz_GetTicks:
-    rdtsc           ; Читает такты в EDX:EAX
-    shl rdx, 32     ; Сдвигаем EDX (старшие 32 бита) в верхнюю часть RDX
-    or rax, rdx     ; Склеиваем с EAX в 64-битный RAX
-    shr rax, 16     ; ВОТ ОНА, МАГИЯ: Сдвигаем весь результат на 16 бит вправо
+    rdtsc
+    shl rdx, 32
+    or rax, rdx
+    shr rax, 16
     ret
     
 roz_AtomicXchg64:
     mov rax, rdx
-    xchg [rcx], rax        ; XCHG атомарен сам по себе
+    xchg [rcx], rax
     ret
 
 roz_AtomicAdd64:
-    lock add [rcx], rdx    ; Префикс LOCK делает операцию неделимой
+    lock add [rcx], rdx
     ret
 
 roz_Prefetch:
-    prefetcht0 [rcx]       ; Загрузить данные в L1 кэш заранее
+    prefetcht0 [rcx]
     ret
 
 roz_CacheFlush:
-    clflush [rcx]          ; Сбросить линию кэша (принудительное чтение из RAM)
+    clflush [rcx]
     ret
 
 roz_MemIsZero:
     test rdx, rdx
     jz .is_zero
     mov r8, rdx
-    shr r8, 4       ; r8 = количество блоков по 16 байт
-    jz .tail        ; Если меньше 16 байт, идем в хвост
+    shr r8, 4
+    jz .tail
 .simd_loop:
     movdqu xmm1, [rcx]
     ptest xmm1, xmm1
@@ -227,7 +227,7 @@ roz_MemIsZero:
     dec r8
     jnz .simd_loop
 .tail:
-    and rdx, 15     ; rdx теперь содержит ТОЛЬКО остаток (0-15 байт)
+    and rdx, 15
     jz .is_zero
     test rdx, 8
     jz .byte_check
@@ -235,7 +235,7 @@ roz_MemIsZero:
     jne .not_zero
     add rcx, 8
 .byte_check:
-    and rdx, 7      ; rdx теперь содержит остаток (0-7 байт)
+    and rdx, 7
     jz .is_zero
 .byte_loop:
     cmp byte [rcx], 0
@@ -264,20 +264,20 @@ roz_StrLen:
     cmp byte [rcx + rax], 0
     je .done
     inc rax
-    cmp rax, 1024           ; ЗАЩИТА: если символ > 1КБ, это мусор
+    cmp rax, 1024
     jae .done
     jmp .loop
 .done:
     ret
 
 roz_StrChr:
-    mov rax, rcx        ; rax = указатель на строку (первый аргумент)
-    movzx edx, dl       ; edx = символ для поиска (второй аргумент в dl)
+    mov rax, rcx
+    movzx edx, dl
 .search:
-    mov cl, [rax]       ; Берем текущий символ
-    test cl, cl         ; Конец строки?
+    mov cl, [rax]
+    test cl, cl
     jz .not_found
-    cmp cl, dl          ; Сравниваем с искомым
+    cmp cl, dl
     je .found
     inc rax
     jmp .search
@@ -288,21 +288,21 @@ roz_StrChr:
     ret
 
 roz_Alloc:
-    sub rsp, 48             ; 32 (Shadow) + 16 (Alignment)
-    mov r8, rcx             ; Размер
+    sub rsp, 48
+    mov r8, rcx
     call GetProcessHeap
-    mov rcx, rax            ; Handle
-    xor rdx, rdx            ; Flags = 0
+    mov rcx, rax
+    xor rdx, rdx
     call HeapAlloc
     add rsp, 48
     ret
 
 roz_Calloc:
-    sub rsp, 48             ; Было 40 — ЭТО ПРИЧИНА КРАША
-    mov r8, rcx             ; Размер
+    sub rsp, 48
+    mov r8, rcx
     call GetProcessHeap
-    mov rcx, rax            ; Хэндл кучи
-    mov rdx, 8              ; HEAP_ZERO_MEMORY
+    mov rcx, rax
+    mov rdx, 8
     call HeapAlloc
     add rsp, 48
     ret
@@ -311,19 +311,19 @@ roz_Free:
     test rcx, rcx
     jz .done
     sub rsp, 48
-    mov r8, rcx             ; Указатель на блок
+    mov r8, rcx
     call GetProcessHeap
-    mov rcx, rax            ; Handle
-    xor rdx, rdx            ; Flags = 0
+    mov rcx, rax
+    xor rdx, rdx
     call HeapFree
     add rsp, 48
 .done:
     ret
 
 roz_Realloc:
-    sub rsp, 48             ; Исправлено с 40 на 48
-    mov r9, rdx             ; Новый размер
-    mov r8, rcx             ; Старый указатель
+    sub rsp, 48
+    mov r9, rdx
+    mov r8, rcx
     call GetProcessHeap
     mov rcx, rax
     xor rdx, rdx
