@@ -30,3 +30,6 @@ The library exports 18 low-level functions including:
 - CPU: `GetTicks`, `Prefetch`, `CacheFlush`.
 
 Refer to `test_asm.py` for Python integration examples via `ctypes`.
+
+## Validation
+All core functions are verified with a Python stress-test suite.
